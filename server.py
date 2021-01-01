@@ -56,39 +56,47 @@ def register_user(name, first_name, last_name, gender, pronouns, interests):
     user_id = generate_user_id()
 
     # Insert the new user into the 'user' table
-    sql = f"""INSERT INTO users
+    c.execute("""INSERT INTO users
                   (user_name,
                   first_name,
                   last_name,
                   user_id,
                   gender,
                   pronouns)
-              VALUES ('{name}',
-                      '{first_name}',
-                      '{last_name}',
-                      {user_id},
-                      '{gender}',
-                      '{pronouns}')
-          """
-    c.execute(sql)
+              VALUES (%(user_name)s,
+                      %(first_name)s,
+                      %(last_name)s,
+                      %(user_id)s,
+                      %(gender)s,
+                      %(pronouns)s)
+          """, {"user_name": name,
+                "first_name": first_name,
+                "last_name": last_name,
+                "user_id": user_id,
+                "gender": gender,
+                "pronouns": pronouns})
     conn.commit()
 
     # Insert the new user's interests into the 'interests' table
-    sql = f"""INSERT INTO interests
+    c.execute("""INSERT INTO interests
                   (user_id,
                   interest1,
                   interest2,
                   interest3,
                   interest4,
                   interest5)
-              VALUES ('{user_id}',
-                      '{interests[0]}',
-                      '{interests[1]}',
-                      '{interests[2]}',
-                      '{interests[3]}',
-                      '{interests[4]}')
-           """
-    c.execute(sql)
+              VALUES (%(user_id)s,
+                      %(first_interest)s,
+                      %(second_interest)s,
+                      %(third_interest)s,
+                      %(fourth_interest)s,
+                      %(fifth_interest)s)
+           """, {"user_id": user_id,
+                 "first_interest": interests[0],
+                 "second_interest": interests[1],
+                 "third_interest": interests[2],
+                 "fourth_interest": interests[3],
+                 "fifth_interest": interests[4]})
     conn.commit()
 
     return True, "Success"
