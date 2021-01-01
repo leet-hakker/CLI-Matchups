@@ -3,6 +3,23 @@ from flask import request, Response
 import sqlite3
 import random
 
+# The location of the database
+location = "data"
+
+# Connect to the database
+conn = sqlite3.connect(location)
+c = conn.cursor()
+
+# Create table of users, with user_name, user_id, gender and pronouns columns
+sql = "CREATE TABLE IF NOT EXISTS users (user_name varchar(255), first_name varchar(255), last_name varchar(255), user_id integer, gender varchar(255), pronouns varchar(255))"
+c.execute(sql)
+conn.commit()
+
+# Create table of interests, with user_id and 5 interest columns
+sql = "CREATE TABLE IF NOT EXISTS interests (user_id integer, interest1 varchar(255), interest2 varchar(255), interest3 varchar(255), interest4 varchar(255), interest5 varchar(255))"
+c.execute(sql)
+conn.commit()
+
 # Checks if a value exists in a column of a table
 # https://stackoverflow.com/a/39283198/9899381
 
@@ -15,13 +32,20 @@ def has_value(cursor, table, column, value):
 # Generates a random user_id
 def generate_user_id():
     user_id = random.randrange(10000, 99999)
-    while has_value(c, table_name, "user_id", user_id):
+    while has_value(c, "users", "user_id", user_id):
         user_id = random.randrange(10000, 99999)
     return user_id
 
 
 def check_if_user_exists(user_name):
-    return has_value(c, table_name, "user_name", user_name)
+    # The location of the database
+    location = "data"
+
+    # Connect to the database
+    conn = sqlite3.connect(location)
+    c = conn.cursor()
+
+    return has_value(c, "users", "user_name", user_name)
 
 
 def register_user(name, first_name, last_name, gender, pronouns, interests):
@@ -78,9 +102,6 @@ app.config["DEBUG"] = True
 def register():
     # The location of the database
     location = "data"
-    # The name of the table
-    global table_name
-    table_name = "users"
 
     # Connect to the database
     global conn
@@ -114,6 +135,19 @@ def register():
         return Response("{'message':" + message + "}", status=201, mimetype="application/json")
 
     return Response("{'message':" + message + "}", status=409, mimetype="application/json")
+
+
+@app.route('/check_username', methods=['POST'])
+def check_username():
+    req_data = request.get_json()
+
+    user_name = req_data["user_name"]
+
+    exists = check_if_user_exists(user_name)
+
+    if exists:
+        return Response("{'message': 'User name already in use.'}", status=409, mimetype="application/json")
+    return Response("{'message': 'User name available'}", status=200, mimetype="application/json")
 
 
 app.run()
