@@ -1,6 +1,8 @@
 from pathlib import Path
 import os
 import requests
+import getpass
+import bcrypt
 
 SERVER_ADDRESS = "http://127.0.0.1:5000"
 
@@ -77,41 +79,48 @@ def register():
     # Get the user's pronouns
     print("""Please select your pronouns:
           0: she/her
-          1: he/him
-          2: they/them
-          3: neopronouns (please specify)""")
-    print(f"If this question confuses you, select: {gender}")
+          1: she/they
+          2: he/him
+          3: he/they
+          4: they/them
+          5: neopronouns (please specify)""")
+    print(f"If this question confuses you, select: {gender*2}")
     pronouns = input("")
 
-    # If the selection is not an integer or is not between 0 and 3 continue to ask
-    while not pronouns.isnumeric() or 0 > int(pronouns) > 3:
+    # If the selection is not an integer or is not between 0 and 5, continue to ask
+    while not pronouns.isnumeric() or 0 > int(pronouns) > 5:
         if not pronouns.isnumeric():
             print("Please enter an integer value for your selection.")
             print("""Please select your pronouns:
                   0: she/her
-                  1: he/him
-                  2: they/them
-                  3: neopronouns (please specify)""")
-            print(f"If this question confuses you, select: {gender}")
+                  1: she/they
+                  2: he/him
+                  3: he/they
+                  4: they/them
+                  5: neopronouns (please specify)""")
+            print(f"If this question confuses you, select: {gender*2}")
             pronouns = input("")
         else:
-            print("Please enter a value between 0 and 3")
+            print("Please enter a value between 0 and 5")
             print("""Please select your pronouns:
                   0: she/her
-                  1: he/him
-                  2: they/them
-                  3: neopronouns (please specify)""")
-            print(f"If this question confuses you, select: {gender}")
+                  1: she/they
+                  2: he/him
+                  3: he/they
+                  4: they/them
+                  5: neopronouns (please specify)""")
+            print(f"If this question confuses you, select: {gender*2}")
             pronouns = input("")
 
     pronouns = int(pronouns)
 
     # If the user indicated that they use neopronouns, request that they specify
     # which neopronouns
-    if pronouns == 3:
+    if pronouns == 5:
         pronounsstring = input("Please specify your pronouns: ")
     else:
-        pronounsstring = ["she/her", "he/him", "they/them"][pronouns]
+        pronounsstring = ["she/her", "she/they",
+                          "he/him", "he/they", "they/them"][pronouns]
 
     # Get 5 of the user's interests. If they cannot name enough interests the
     # remaining columns will be filled with None
@@ -128,23 +137,64 @@ def register():
             if interest != "":
                 interests[i] = interest
 
+    password = getpass.getpass("Please enter a password: ")
+    password_verif = getpass.getpass("Please verify your password: ")
+    while password_verif != password:
+        print("Your passwords were inconsistent. Please try again.")
+        password = getpass.getpass("Please enter a password: ")
+        password_verif = getpass.getpass("Please verify your password: ")
+
+    del password_verif
+
     r = requests.post(f"{SERVER_ADDRESS}/register", json={"user_name": username, "first_name": first_name,
-                                                          "last_name": last_name, "gender": genderstring, "pronouns": pronounsstring, "interests": interests})
-    print(r.status_code)
+                                                          "last_name": last_name, "gender": genderstring, "pronouns": pronounsstring, "interests": interests, "auth": password})
+    del password
+    return username
 
 
-def login():
-    pass
+def login(username=None):
+    if not username:
+        username = input("Enter username: ")
+    password = getpass.getpass("Enter password to login: ").encode("utf-8")
+
+    r = requests.get(f"{SERVER_ADDRESS}/salt-nonce",
+                     json={"user_name": username})
+
+    salt, server_nonce = r.json()["message"].split()
+    salt, server_nonce = salt.encode("utf-8"), server_nonce.encode("utf-8")
+
+    client_nonce = bcrypt.gensalt()
+    password_hash = bcrypt.hashpw(password, salt)
+
+    nonce_hash = bcrypt.hashpw(
+        password_hash, bcrypt.hashpw(client_nonce, server_nonce))
+
+    r = requests.post(f"{SERVER_ADDRESS}/login", json={
+                      "user_name": username, "client_nonce": client_nonce, "nonce_hash": nonce_hash})
+    if r.status_code == 200:
+        print("Login successful.")
+    else:
+        print("Login failed.")
 
 
 home = str(Path.home())
-if not os.path.isdir(f"{home}/.clidating") or not os.path.isfile(f"{home}/.clidating/name"):
-    # os.mkdir(f"{home}/.clidating/")
+if not os.path.isdir(f"{home}/.cli-matchmaking") or not os.path.isfile(f"{home}/.cli-matchmaking/name"):
+    try:
+        os.mkdir(f"{home}/.cli-matchmaking/")
+        pass
+    except:
+        # Please be quiet about this
+        pass
     account = True if input("Already have an account? y/n  ") == "y" else False
     if account:
-        login()
+        username = login()
     else:
-        register()
-    # r = requests.post(f"{SERVER_ADDRESS}/register", json={"user_name": "bob420", "first_name": "John", "last_name": "Doe", "gender": "Non-binary",
-    #                                                           "pronouns": "they/them", "interests": ["Python", "Jython", "Cython", "Gython", None]})
-    # print(r.status_code)
+        username = register()
+
+    with open(f"{home}/.cli-matchmaking/name", "w") as f:
+        f.write(username)
+
+else:
+    with open(f"{home}/.cli-matchmaking/name", "r") as f:
+        username = f.readline()
+        login(username)
