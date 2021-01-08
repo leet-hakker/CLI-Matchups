@@ -3,9 +3,9 @@ import os
 import requests
 import getpass
 import bcrypt
+import subprocess
 
 SERVER_ADDRESS = "http://127.0.0.1:5000"
-
 
 def register():
 
@@ -170,18 +170,37 @@ def login(username=None):
         password_hash, bcrypt.hashpw(client_nonce, server_nonce))
 
     r = requests.post(f"{SERVER_ADDRESS}/login", json={
-                      "user_name": username, "client_nonce": client_nonce, "nonce_hash": nonce_hash})
+                      "user_name": username, "client_nonce": client_nonce.decode('utf-8'), "nonce_hash": nonce_hash.decode('utf-8')})
     if r.status_code == 200:
         print("Login successful.")
     else:
         print("Login failed.")
 
 
+def display_user(user_data):
+    display_string = \
+    f"""
+{user_data['user_name']}                                Interests:
+{user_data['gender']}                                   {str(user_data['interests'][0])*bool(user_data['interests'][0])}
+{user_data['pronouns']}                                  {str(user_data['interests'][1])*bool(user_data['interests'][1])}
+                                    {str(user_data['interests'][2])*bool(user_data['interests'][2])}
+                                    {str(user_data['interests'][3])*bool(user_data['interests'][3])}
+                                    {str(user_data['interests'][4])*bool(user_data['interests'][4])}
+"""
+    print(display_string)
+
+def search_users():
+    repeat = True
+    while repeat:
+        subprocess.run("clear")
+        user_data = requests.get(f"{SERVER_ADDRESS}/get-match").json()
+        display_user(user_data)
+        repeat = True if input("Continue looking for matches? y/n  ") == "y" else False
+
 home = str(Path.home())
 if not os.path.isdir(f"{home}/.cli-matchmaking") or not os.path.isfile(f"{home}/.cli-matchmaking/name"):
     try:
         os.mkdir(f"{home}/.cli-matchmaking/")
-        pass
     except:
         # Please be quiet about this
         pass
@@ -198,3 +217,5 @@ else:
     with open(f"{home}/.cli-matchmaking/name", "r") as f:
         username = f.readline()
         login(username)
+
+search_users()

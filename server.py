@@ -1,5 +1,6 @@
 import flask
 from flask import request, Response
+from flask import jsonify
 import sqlite3
 import random
 import bcrypt
@@ -188,7 +189,6 @@ def request_salt_and_nonce():
 
     salt = c.fetchone()
     nonce = bcrypt.gensalt()
-    print(nonce)
     c.execute("UPDATE users SET nonce = ? WHERE user_name=?",
               (nonce, user_name))
     conn.commit()
@@ -201,6 +201,32 @@ def request_salt_and_nonce():
 
     else:
         return Response('{"message": "Authorisation rejected"}', status=401, mimetype="application/json")
+
+
+@app.route('/get-match', methods=['GET'])
+def get_match():
+    req_data = request.get_json()
+
+
+    conn = sqlite3.connect("data")
+    c = conn.cursor()
+
+    c.execute("SELECT * FROM users ORDER BY RANDOM()")
+    user = c.fetchone()
+
+    name = user[0]
+    first_name = user[1]
+    last_name = user[2]
+    gender = user[3]
+    pronouns = user[4]
+
+    c.execute("SELECT * FROM interests WHERE user_name=?", (name,))
+    interests = c.fetchone()[1:]
+
+    data = {"user_name": name, "first_name": first_name, "last_name": last_name, "gender": gender, "pronouns": pronouns, "interests": interests}
+
+    return jsonify(data)
+
 
 
 app.run()
