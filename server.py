@@ -29,7 +29,7 @@ conn.commit()
 def has_value(table, column, value):
     conn = sqlite3.connect(location)
     c = conn.cursor()
-    query = 'SELECT 1 from {} WHERE {} = ? LIMIT 1'.format(table, column)
+    query = "SELECT 1 from {} WHERE {} = ? LIMIT 1".format(table, column)
     return c.execute(query, (value,)).fetchone() is not None
 
 
@@ -45,7 +45,7 @@ def register_user(name, first_name, last_name, gender, pronouns, interests, auth
         return False, "User name already in use."
 
     salt = bcrypt.gensalt()
-    hash = bcrypt.hashpw(auth.encode('utf-8'), salt)
+    hash = bcrypt.hashpw(auth.encode("utf-8"), salt)
     del auth
 
     # Connect to the database
@@ -53,7 +53,8 @@ def register_user(name, first_name, last_name, gender, pronouns, interests, auth
     c = conn.cursor()
 
     # Insert the new user into the 'user' table
-    c.execute("""INSERT INTO users
+    c.execute(
+        """INSERT INTO users
                   (user_name,
                   first_name,
                   last_name,
@@ -68,17 +69,13 @@ def register_user(name, first_name, last_name, gender, pronouns, interests, auth
                       ?,
                       ?,
                       ?);""",
-              (name,
-               first_name,
-               last_name,
-               gender,
-               pronouns,
-               salt,
-               hash))
+        (name, first_name, last_name, gender, pronouns, salt, hash),
+    )
     conn.commit()
 
     # Insert the new user's interests into the 'interests' table
-    c.execute("""INSERT INTO interests
+    c.execute(
+        """INSERT INTO interests
                   (user_name,
                   interest1,
                   interest2,
@@ -86,12 +83,8 @@ def register_user(name, first_name, last_name, gender, pronouns, interests, auth
                   interest4,
                   interest5)
               VALUES (?,?,?,?,?,?);""",
-              (name,
-               interests[0],
-               interests[1],
-               interests[2],
-               interests[3],
-               interests[4]))
+        (name, interests[0], interests[1], interests[2], interests[3], interests[4]),
+    )
     conn.commit()
 
     return True, "Success"
@@ -101,7 +94,7 @@ app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 
 
-@app.route('/register', methods=['POST'])
+@app.route("/register", methods=["POST"])
 def register():
     # The location of the database
     location = "data"
@@ -121,15 +114,20 @@ def register():
     auth = req_data["auth"]
 
     success, message = register_user(
-        user_name, first_name, last_name, gender, pronouns, interests, auth)
+        user_name, first_name, last_name, gender, pronouns, interests, auth
+    )
 
     if success:
-        return Response("{'message':" + message + "}", status=201, mimetype="application/json")
+        return Response(
+            "{'message':" + message + "}", status=201, mimetype="application/json"
+        )
 
-    return Response("{'message':" + message + "}", status=409, mimetype="application/json")
+    return Response(
+        "{'message':" + message + "}", status=409, mimetype="application/json"
+    )
 
 
-@app.route('/check_username', methods=['POST'])
+@app.route("/check_username", methods=["POST"])
 def check_username():
     req_data = request.get_json()
 
@@ -138,11 +136,17 @@ def check_username():
     exists = check_if_user_exists(user_name)
 
     if exists:
-        return Response("{'message': 'User name already in use.'}", status=409, mimetype="application/json")
-    return Response("{'message': 'User name available'}", status=200, mimetype="application/json")
+        return Response(
+            "{'message': 'User name already in use.'}",
+            status=409,
+            mimetype="application/json",
+        )
+    return Response(
+        "{'message': 'User name available'}", status=200, mimetype="application/json"
+    )
 
 
-@app.route('/login', methods=['POST'])
+@app.route("/login", methods=["POST"])
 def login():
     # Connect to the database
     conn = sqlite3.connect("data")
@@ -154,7 +158,11 @@ def login():
     client_nonce_hash = req_data["nonce_hash"].encode("utf-8")
 
     if not check_if_user_exists(username):
-        return Response('{"message": "Authorisation rejected"}', status=401, mimetype="application/json")
+        return Response(
+            '{"message": "Authorisation rejected"}',
+            status=401,
+            mimetype="application/json",
+        )
 
     c.execute("SELECT hash,nonce FROM users WHERE user_name=?", (username,))
 
@@ -166,17 +174,26 @@ def login():
     # print(client_nonce)
     # print(server_nonce)
     server_nonce_hash = bcrypt.hashpw(
-        password_hash, bcrypt.hashpw(client_nonce, server_nonce))
+        password_hash, bcrypt.hashpw(client_nonce, server_nonce)
+    )
 
     print(client_nonce_hash)
 
     if client_nonce_hash == server_nonce_hash:
-        return Response('{"message": "Authorisation accepted"}', status=200, mimetype="application/json")
+        return Response(
+            '{"message": "Authorisation accepted"}',
+            status=200,
+            mimetype="application/json",
+        )
     else:
-        return Response('{"message": "Authorisation rejected"}', status=401, mimetype="application/json")
+        return Response(
+            '{"message": "Authorisation rejected"}',
+            status=401,
+            mimetype="application/json",
+        )
 
 
-@app.route('/salt-nonce', methods=['GET'])
+@app.route("/salt-nonce", methods=["GET"])
 def request_salt_and_nonce():
     req_data = request.get_json()
     user_name = req_data["user_name"]
@@ -189,24 +206,26 @@ def request_salt_and_nonce():
 
     salt = c.fetchone()
     nonce = bcrypt.gensalt()
-    c.execute("UPDATE users SET nonce = ? WHERE user_name=?",
-              (nonce, user_name))
+    c.execute("UPDATE users SET nonce = ? WHERE user_name=?", (nonce, user_name))
     conn.commit()
 
     if salt is not None:
         salt = salt[0]
-        string = '{"message":"'+str(salt)[2:-1]+' '+str(nonce)[2:-1]+'"}'
+        string = '{"message":"' + str(salt)[2:-1] + " " + str(nonce)[2:-1] + '"}'
 
         return Response(string, status=200, mimetype="application/json")
 
     else:
-        return Response('{"message": "Authorisation rejected"}', status=401, mimetype="application/json")
+        return Response(
+            '{"message": "Authorisation rejected"}',
+            status=401,
+            mimetype="application/json",
+        )
 
 
-@app.route('/get-match', methods=['GET'])
+@app.route("/get-match", methods=["GET"])
 def get_match():
     req_data = request.get_json()
-
 
     conn = sqlite3.connect("data")
     c = conn.cursor()
@@ -223,10 +242,28 @@ def get_match():
     c.execute("SELECT * FROM interests WHERE user_name=?", (name,))
     interests = c.fetchone()[1:]
 
-    data = {"user_name": name, "first_name": first_name, "last_name": last_name, "gender": gender, "pronouns": pronouns, "interests": interests}
+    data = {
+        "user_name": name,
+        "first_name": first_name,
+        "last_name": last_name,
+        "gender": gender,
+        "pronouns": pronouns,
+        "interests": interests,
+    }
 
     return jsonify(data)
 
+
+@app.route("/confirm-match", methods=["POST"])
+def confirm_match():
+    req_data = request.get_json()
+    return Response('{"message:" "Success"}', status=200, mimetype="application/json")
+
+
+@app.route("/reject-match", methods=["POST"])
+def reject_match():
+    req_data = request.get_json()
+    return Response('{"message": "Success"}', status=200, mimetype="application/json")
 
 
 app.run()
