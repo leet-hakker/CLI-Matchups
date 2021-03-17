@@ -4,10 +4,13 @@ import sqlite3
 import utils
 import bcrypt
 
-registration = Blueprint('registration', __name__)
+registration = Blueprint("registration", __name__)
 location = "data"
 
-def register_user(name, first_name, last_name, gender, pronouns, interests, auth, lat, lng, age):
+
+def register_user(
+    name, first_name, last_name, gender, pronouns, interests, auth, lat, lng, age
+):
     # If user name is already in use, return False with the reason
     if utils.check_if_user_exists("data", name):
         return False, "User name already in use."
@@ -45,7 +48,19 @@ def register_user(name, first_name, last_name, gender, pronouns, interests, auth
                       ?,
                       ?,
                       ?);""",
-        (name, first_name, last_name, gender, pronouns, age, lat, lng, salt, hash, None),
+        (
+            name,
+            first_name,
+            last_name,
+            gender,
+            pronouns,
+            age,
+            lat,
+            lng,
+            salt,
+            hash,
+            None,
+        ),
     )
     conn.commit()
 
@@ -64,6 +79,7 @@ def register_user(name, first_name, last_name, gender, pronouns, interests, auth
     conn.commit()
 
     return True, "Success"
+
 
 @registration.route("/register", methods=["POST"])
 def register():
@@ -88,7 +104,16 @@ def register():
     age = req_data["age"]
 
     success, message = register_user(
-        user_name, first_name, last_name, gender, pronouns, interests, auth, lat, lng, age
+        user_name,
+        first_name,
+        last_name,
+        gender,
+        pronouns,
+        interests,
+        auth,
+        lat,
+        lng,
+        age,
     )
 
     if success:

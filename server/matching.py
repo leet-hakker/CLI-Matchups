@@ -5,7 +5,8 @@ import get_matches
 import sqlite3
 import json
 
-matching = Blueprint('matching', __name__)
+matching = Blueprint("matching", __name__)
+
 
 @matching.route("/get-match", methods=["GET"])
 def get_match():
@@ -17,11 +18,16 @@ def get_match():
     if count:
         conn = sqlite3.connect("data")
         c = conn.cursor()
-        c.execute("UPDATE users SET count = ? WHERE user_name=?", (count, req_data["user_name"]))
+        c.execute(
+            "UPDATE users SET count = ? WHERE user_name=?",
+            (count, req_data["user_name"]),
+        )
         conn.commit()
         return jsonify(users)
     else:
-        return Response('{"message": "Invalid request"}', status=400, mimetype="application/json")
+        return Response(
+            '{"message": "Invalid request"}', status=400, mimetype="application/json"
+        )
 
 
 @matching.route("/confirm-match", methods=["POST"])

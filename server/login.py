@@ -4,7 +4,8 @@ import sqlite3
 import bcrypt
 import utils
 
-loginblueprint = Blueprint('login', __name__)
+loginblueprint = Blueprint("login", __name__)
+
 
 @loginblueprint.route("/login", methods=["POST"])
 def login():
@@ -35,16 +36,10 @@ def login():
         password_hash, bcrypt.hashpw(client_nonce, server_nonce)
     )
 
-
     if client_nonce_hash == server_nonce_hash:
-        return Response(
-            '{"message": "Authorisation accepted"}',
-            status=200,
-            mimetype="application/json",
-        )
+        session_id = None
+        return {"message": "Autorisation accepted", "session_id": session_id}, 200
     else:
-        print(client_nonce_hash)
-        print(server_nonce_hash)
         return Response(
             '{"message": "Authorisation rejected"}',
             status=401,

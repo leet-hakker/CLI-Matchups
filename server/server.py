@@ -47,11 +47,16 @@ def get_match():
     if count:
         conn = sqlite3.connect("data")
         c = conn.cursor()
-        c.execute("UPDATE users SET count = ? WHERE user_name=?", (count, req_data["user_name"]))
+        c.execute(
+            "UPDATE users SET count = ? WHERE user_name=?",
+            (count, req_data["user_name"]),
+        )
         conn.commit()
         return jsonify(users)
     else:
-        return Response('{"message": "Invalid request"}', status=401, mimetype="application/json")
+        return Response(
+            '{"message": "Invalid request"}', status=401, mimetype="application/json"
+        )
 
 
 @app.route("/confirm-match", methods=["POST"])

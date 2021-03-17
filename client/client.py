@@ -236,7 +236,8 @@ def search_users(username):
         r = requests.get(f"{SERVER_ADDRESS}/get-match", json={"user_name": username})
         if not r.ok:
             return False
-        users = r.json()
+        users = json.loads(r.json())
+        print(type(users))
         for user_data in users:
             display_user(user_data)
             like = True if input("\rLike this user? y/n  ") == "y" else False
