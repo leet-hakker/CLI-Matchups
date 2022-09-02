@@ -18,7 +18,7 @@ MarkupSafe==1.1.1
 meson==0.57.1
 msgpack==1.0.2
 mypy-extensions==0.4.3
-numpy==1.21.0
+numpy==1.22.0
 ordered-set==4.0.2
 packaging==20.9
 pastel==0.2.1

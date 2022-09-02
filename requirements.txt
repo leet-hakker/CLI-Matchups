@@ -1,6 +1,6 @@
 lxml==4.9.1
 Flask==1.1.2
-numpy==1.21.0
+numpy==1.22.0
 brotli==1.0.9
 cryptography==3.4.6
 Cython==0.29.22
